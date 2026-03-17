@@ -119,21 +119,3 @@ class WaveshareAdapter(BaseDisplayAdapter):
     def close(self) -> None:
         """Close the display."""
         self._epd.sleep()
-
-
-# ---------------------------------------------------------------------------
-# Factory
-# ---------------------------------------------------------------------------
-
-
-def make_adapter(config: dict) -> BaseDisplayAdapter:
-    """Create a display adapter based on the configuration."""
-    driver = config.get("display", {}).get("driver", "headless")
-    if driver == "headless":
-        out = config.get("display", {}).get("output_dir", "/tmp/maginkmirror_output")
-        return HeadlessAdapter(output_dir=out)
-    elif driver == "waveshare":
-        model = config.get("display", {}).get("model", "epd7in5_V2")
-        return WaveshareAdapter(model=model)
-    else:
-        raise ValueError(f"Unknown display driver: {driver!r}")

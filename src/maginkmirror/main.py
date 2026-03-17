@@ -8,7 +8,7 @@ import time
 from typer import Typer
 
 from maginkmirror.core.config import load_config
-from maginkmirror.display import make_adapter
+from maginkmirror.display.make_adapter import make_adapter
 from maginkmirror.layout import LayoutEngine
 from maginkmirror.plugins import PluginRegistry
 from maginkmirror.scheduler import Scheduler

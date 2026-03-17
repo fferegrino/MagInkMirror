@@ -16,6 +16,9 @@ maginkmirror = "maginkmirror.__main__:app"
 dev = [
     "ruff>=0.15.6",
 ]
+inky = [
+    "inky>=2.3.0",
+]
 
 [tool.bumpversion]
 current_version = "0.1.0"
