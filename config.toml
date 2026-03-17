@@ -48,12 +48,12 @@ y      = 0
 width  = 800
 height = 120
 
-# [layout.zones.weather]
-# plugin = "weather"
-# x      = 0
-# y      = 120
-# width  = 400
-# height = 180
+[layout.zones.weather]
+plugin = "weather"
+x      = 0
+y      = 120
+width  = 400
+height = 180
 
 # [layout.zones.calendar]
 # plugin = "calendar"
