@@ -5,11 +5,97 @@ description = "A MagicMirror clone for e-ink displays and Raspberry Pi"
 readme = "readme.md"
 requires-python = ">=3.13"
 dependencies = [
+    "pillow>=12.1.1",
     "typer>=0.24.1",
 ]
 
 [project.scripts]
 maginkmirror = "maginkmirror.__main__:app"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.6",
+]
+
+[tool.bumpversion]
+current_version = "0.1.0"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+tag = true
+tag_name = "v{new_version}"
+tag_message = "Bump version: {current_version} → {new_version}"
+commit = true
+message = "Bump version: {current_version} → {new_version}"
+allow_dirty = false
+pre_commit_hooks = [
+    "uv sync",
+    "git add uv.lock",
+]
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "src/maginkmirror/__init__.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""
+
+[tool.ruff]
+line-length = 120
+exclude = [".git", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "C90", # mccabe (we are not ready)
+    "D", # pydocstyle
+    "E", # pycodestyle
+    "F", # pyflakes
+    "FBT", # flake8-boolean-trap
+    "I", # isort
+    "N", # pep8-naming
+    "PIE", # flake8-pie
+    "PL", # pylint
+    "SIM", # flake8-simplify
+    "UP", # pyupgrade
+    "YTT", # flake8-2020
+]
+ignore = [
+    "D203", # One blank line before class
+    "D212", # Multiline summary second line
+    "FBT001", # Boolean-typed positional argument in function definition
+    "FBT002", # Boolean default positional argument in function definition
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pytest_fixtures_fixtures"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "B011", # Do not `assert False`
+    "D401", # First line of docstring should be in imperative mood
+    "D404", # First word of the docstring should not be "This"
+    "F841", # Local variable is assigned to but never used
+    "PLR2004", # Magic values
+    "PLR0913", # Too many arguments in function definition
+    "PLC0415", # `import` should be at the top-level of a file
+    "SIM117", # Use a single `with` statement
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in __init__
+    "D203", # One blank line before class
+    "D212", # Multiline summary second line
+]
+"*.ipynb" = [
+    "ALL"
+]
 
 [build-system]
 requires = ["uv_build>=0.8.6,<0.9.0"]
