@@ -1,0 +1,16 @@
+[project]
+name = "maginkmirror"
+version = "0.1.0"
+description = "A MagicMirror clone for e-ink displays and Raspberry Pi"
+readme = "readme.md"
+requires-python = ">=3.13"
+dependencies = [
+    "typer>=0.24.1",
+]
+
+[project.scripts]
+maginkmirror = "maginkmirror.__main__:app"
+
+[build-system]
+requires = ["uv_build>=0.8.6,<0.9.0"]
+build-backend = "uv_build"
