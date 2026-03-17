@@ -18,6 +18,7 @@ RenderCallback = Callable[[str, PluginData], None]
 class Scheduler:
     """
     Runs each plugin's fetch() on a thread pool at its own interval.
+
     When new data arrives it calls render_cb(plugin_name, data) on the
     calling thread (i.e. the scheduler loop) – the layout engine then
     decides whether to do a full or partial refresh.
@@ -40,12 +41,16 @@ class Scheduler:
     # ------------------------------------------------------------------
 
     def start(self) -> None:
+        """Start the scheduler."""
+        log.info("Starting scheduler (%d plugins)", len(self._plugins))
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._loop, name="scheduler", daemon=True)
         self._thread.start()
         log.info("Scheduler started (%d plugins)", len(self._plugins))
 
     def stop(self, timeout: float = 5.0) -> None:
+        """Stop the scheduler."""
+        log.info("Stopping scheduler...")
         self._stop_event.set()
         if self._thread:
             self._thread.join(timeout)

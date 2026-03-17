@@ -1,0 +1,70 @@
+# MagInkMirror configuration
+# ───────────────────────
+
+[display]
+driver     = "headless"          # "headless" | "waveshare" | "it8951"
+width      = 800
+height     = 480
+mode       = "L"                 # "1" = 1-bit, "L" = 8-bit greyscale
+output_dir = ".maginkmirror"  # headless only
+# model    = "epd7in5_V2"        # waveshare only
+
+# ── Plugins ──────────────────────────────────────────────────────────────────
+
+# If omitted, all discovered plugins are loaded.
+# enabled_plugins = ["clock", "weather", "calendar"]
+
+# Extra directories to search for plugins (in addition to ./plugins/)
+# plugin_dirs = ["/home/pi/.config/inkmirror/plugins"]
+
+[plugins.clock]
+timezone = "Europe/London"
+format   = "%H:%M"
+
+# [plugins.weather]
+# provider  = "openmeteo"          # "openmeteo" (free, no key) | "openweathermap"
+# latitude  = 51.5074
+# longitude = -0.1278
+# units     = "metric"
+# # api_key = "YOUR_KEY"           # required for openweathermap
+
+# [plugins.calendar]
+# # ics_url = "https://calendar.google.com/calendar/ical/…/basic.ics"
+# max_events = 5
+
+# [plugins.news]
+# feed_url    = "https://feeds.bbci.co.uk/news/rss.xml"
+# max_items   = 5
+
+# ── Layout ───────────────────────────────────────────────────────────────────
+#
+# Zones map named regions on the display to plugins.
+# Coordinates are in pixels.  Zones may not overlap.
+
+[layout.zones.clock]
+plugin = "clock"
+x      = 0
+y      = 0
+width  = 800
+height = 120
+
+# [layout.zones.weather]
+# plugin = "weather"
+# x      = 0
+# y      = 120
+# width  = 400
+# height = 180
+
+# [layout.zones.calendar]
+# plugin = "calendar"
+# x      = 400
+# y      = 120
+# width  = 400
+# height = 180
+
+# [layout.zones.news]
+# plugin = "news"
+# x      = 0
+# y      = 300
+# width  = 800
+# height = 180

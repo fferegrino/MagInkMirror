@@ -12,10 +12,13 @@ PLUGIN_CLASS = "ClockPlugin"
 
 
 class ClockPlugin(BasePlugin):
+    """Clock plugin – renders the current time into its zone."""
+
     name = "clock"
     interval = 30  # refresh every 30 seconds
 
     def fetch(self) -> PluginData:
+        """Fetch the current time."""
         tz_name = self.config.get("timezone", "UTC")
         try:
             from zoneinfo import ZoneInfo
@@ -29,6 +32,7 @@ class ClockPlugin(BasePlugin):
         return PluginData(payload={"time": now.strftime(fmt), "date": now.strftime("%A, %d %B %Y")})
 
     def render(self, data: PluginData, image: Image.Image, zone: Zone) -> None:
+        """Render the current time."""
         draw = ImageDraw.Draw(image)
         payload = data.payload
 

@@ -20,9 +20,12 @@ _BUILTIN_PLUGINS_DIR = Path(__file__).parent.parent / "plugins"
 
 class PluginRegistry:
     """
+    Discover and instantiate plugins from the built-in and extra plugin directories.
+
     Loads plugins from:
-      1. The built-in plugins/ directory.
-      2. Any extra directories listed in config['plugin_dirs'].
+      1. The built-in `plugins/` directory.
+      2. The `contrib/plugins/` directory.
+      3. Any extra directories listed in config['plugin_dirs'].
 
     Each plugin directory must contain a module called `plugin.py`
     with a class that subclasses BasePlugin.  The class name is
@@ -101,7 +104,9 @@ class PluginRegistry:
     # ------------------------------------------------------------------
 
     def all(self) -> dict[str, "BasePlugin"]:
+        """Get all plugins."""
         return dict(self._plugins)
 
     def get(self, name: str) -> "BasePlugin | None":
+        """Get a plugin by name."""
         return self._plugins.get(name)

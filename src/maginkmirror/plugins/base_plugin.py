@@ -79,12 +79,21 @@ class BasePlugin(ABC):
     # ------------------------------------------------------------------
 
     def on_fetch_success(self, data: PluginData) -> PluginData:
-        """Called by the scheduler after a successful fetch."""
+        """
+        Return the data to the scheduler.
+
+        Called by the scheduler after a successful fetch.
+        """
         self._last_good = data
         return data
 
     def on_fetch_error(self, exc: Exception) -> PluginData | None:
-        """Called by the scheduler when fetch() raises.  Returns last-good or None."""
+        """
+        Return the data to the scheduler.
+
+        Called by the scheduler when fetch() raises.
+        Return last-good or None.
+        """
         log.warning("[%s] fetch failed: %s – using last-good data", self.name, exc)
         if self._last_good:
             stale = PluginData(
