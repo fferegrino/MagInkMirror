@@ -6,6 +6,7 @@ import logging
 import threading
 import time
 from collections.abc import Callable
+from concurrent.futures import as_completed
 from concurrent.futures import Future, ThreadPoolExecutor
 
 from maginkmirror.plugins import BasePlugin, PluginData
@@ -64,6 +65,11 @@ class Scheduler:
         """Start the scheduler."""
         log.info("Starting scheduler (%d plugins)", len(self._plugins))
         self._stop_event.clear()
+
+        # Initial fetch: block until every plugin produces a first value (or error).
+        # Without this, a global display_refresh_interval can delay the first frame.
+        self._initial_fetch_and_render()
+
         self._thread = threading.Thread(target=self._loop, name="scheduler", daemon=True)
         self._thread.start()
         log.info("Scheduler started (%d plugins)", len(self._plugins))
@@ -107,6 +113,49 @@ class Scheduler:
             if self._display_refresh_interval != -1 and self._display_refresh_interval > 0:
                 wait_for = min(wait_for, self._display_refresh_interval / 2)
             self._stop_event.wait(timeout=wait_for)
+
+    def _initial_fetch_and_render(self, timeout: float = 30.0) -> None:
+        start = time.monotonic()
+        futures: dict[Future, tuple[str, BasePlugin]] = {}
+
+        for name, plugin in self._plugins.items():
+            futures[self._executor.submit(self._fetch_only, name, plugin)] = (name, plugin)
+
+        results: dict[str, PluginData] = {}
+        for fut in as_completed(futures, timeout=timeout):
+            name, plugin = futures[fut]
+            try:
+                data = fut.result()
+            except Exception as exc:
+                data = plugin.on_fetch_error(exc)
+
+            if data is not None:
+                results[name] = data
+
+        elapsed = time.monotonic() - start
+        log.info("Initial fetch complete: %d/%d plugins in %.2fs", len(results), len(self._plugins), elapsed)
+
+        if not results:
+            return
+
+        # Seed next_run so the next scheduled fetch happens after the interval.
+        now = time.monotonic()
+        for name, plugin in self._plugins.items():
+            self._next_run[name] = now + self._plugin_interval(name, plugin)
+
+        try:
+            if self._display_refresh_interval == -1:
+                for name, data in results.items():
+                    self._render_cb(name, data)
+            else:
+                self._render_batch_cb(results)
+        except Exception as exc:
+            log.error("Initial render raised: %s", exc)
+
+    def _fetch_only(self, name: str, plugin: BasePlugin) -> PluginData:
+        """Fetch and run success hook; raise on error."""
+        data = plugin.fetch()
+        return plugin.on_fetch_success(data)
 
     def _fetch_and_notify(self, name: str, plugin: BasePlugin) -> None:
         try:
