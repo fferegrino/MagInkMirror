@@ -1,18 +1,23 @@
-from maginkmirror.display.base_display_adapter import BaseDisplayAdapter
+import logging
+
 from PIL import Image
 
-import logging
+from maginkmirror.display.base_display_adapter import BaseDisplayAdapter
+
 log = logging.getLogger(__name__)
 
+
 class InkyImpressionAdapter(BaseDisplayAdapter):
+    """Adapter for the Inky Impression display."""
 
     FULL_REFRESH_EVERY = 10
 
     def __init__(self, model: str = "auto") -> None:
         self._partial_count = 0
         try:
-            from inky.auto import auto
             import inky as inky_module
+            from inky.auto import auto
+
             self._display = auto()
 
             self._inky = inky_module
@@ -25,7 +30,7 @@ class InkyImpressionAdapter(BaseDisplayAdapter):
             raise RuntimeError("Failed to initialize Inky Impression display") from e
 
     def display(self, image: Image.Image, dirty_plugins: set[str]) -> None:
-
+        """Display the image on the Inky Impression display."""
         log.info(f"Displaying image on Inky Impression display: {image.size}")
         log.info(f"Image mode: {image.mode}")
         log.info(f"Image format: {image.format}")
@@ -37,7 +42,7 @@ class InkyImpressionAdapter(BaseDisplayAdapter):
         self._display.show()
 
     def clear(self) -> None:
-        pass
+        """Clear the display."""
 
     def close(self) -> None:
-        pass
+        """Close the display."""
