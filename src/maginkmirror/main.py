@@ -88,8 +88,9 @@ def main(
     logging.getLogger().setLevel(log_level.upper())
 
     log.info("Starting MagInkMirror")
+    config = load_config("config.toml")
 
-    registry = PluginRegistry({})
+    registry = PluginRegistry(config)
     registry.discover()
     plugins = registry.all()
 
