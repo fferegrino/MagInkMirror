@@ -44,11 +44,12 @@ def main(log_level: str = "INFO", once: bool = False):
 
     layout = LayoutEngine.from_config(config, plugins, adapter)
 
-    scheduler_cfg = config.get("scheduler", {})
+    display_cfg = config.get("display", {})
     scheduler = Scheduler(
         plugins,
         layout.render_plugin,
-        min_plugin_interval=float(scheduler_cfg.get("min_plugin_interval", 0.0)),
+        layout.render_updates,
+        display_refresh_interval=float(display_cfg.get("display_refresh_interval", -1.0)),
     )
 
     def _shutdown(sig, frame):

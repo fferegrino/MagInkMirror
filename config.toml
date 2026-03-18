@@ -7,19 +7,12 @@ width      = 800
 height     = 480
 mode       = "L"                 # "1" = 1-bit, "L" = 8-bit greyscale
 output_dir = ".maginkmirror"  # headless only
-# Global display refresh throttle (seconds). If multiple plugins update close
-# together, their renders are batched and the screen is refreshed at most once
-# per this interval. Set to 0 to disable throttling.
-min_display_refresh_interval = 30
+# Global display refresh cadence (seconds).
+# - Set to -1 to refresh on each plugin update (plugin cadence).
+# - Set to a positive number (e.g. 30) to refresh at most once per interval,
+#   batching all plugin updates that arrived since the last refresh.
+display_refresh_interval = 30
 # model    = "epd7in5_V2"        # waveshare only
-
-# ── Scheduler ────────────────────────────────────────────────────────────────
-#
-# Protect the display from overly frequent refreshes by clamping every plugin's
-# interval to at least this many seconds. Set to 0 to disable clamping.
-#
-[scheduler]
-min_plugin_interval = 30
 
 # ── Plugins ──────────────────────────────────────────────────────────────────
 
