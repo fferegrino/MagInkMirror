@@ -5,7 +5,7 @@ import signal
 import sys
 import time
 
-from typer import Typer
+from typer import Option, Typer
 
 from maginkmirror.core.config import load_config
 from maginkmirror.display.make_adapter import make_adapter
@@ -25,7 +25,11 @@ log = logging.getLogger("maginkmirror")
 
 
 @app.command()
-def main(log_level: str = "INFO", once: bool = False):
+def main(
+    log_level: str = "INFO",
+    once: bool = False,
+    show_zones: bool = Option(False, "--show-zones", help="Render a zone overlay frame (for layout debugging)."),
+):
     """Start MagInkMirror."""
     logging.getLogger().setLevel(log_level.upper())
 
@@ -43,6 +47,10 @@ def main(log_level: str = "INFO", once: bool = False):
         log.info("Loaded plugin: %s", plugin.name)
 
     layout = LayoutEngine.from_config(config, plugins, adapter)
+
+    if show_zones:
+        layout.display_zone_overlay()
+        return
 
     display_cfg = config.get("display", {})
     scheduler = Scheduler(

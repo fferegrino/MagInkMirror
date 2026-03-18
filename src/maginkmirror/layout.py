@@ -6,7 +6,7 @@ import logging
 import threading
 from dataclasses import dataclass
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from maginkmirror.plugins import BasePlugin, PluginData, Zone
 
@@ -16,6 +16,9 @@ log = logging.getLogger(__name__)
 @dataclass
 class ZoneConfig:
     """Configuration for a display zone."""
+
+    name: str
+    """The zone name (from config)."""
 
     plugin: str
     """The plugin to render in this zone."""
@@ -120,6 +123,49 @@ class LayoutEngine:
         except Exception as exc:
             log.error("Display adapter error: %s", exc)
 
+    def display_zone_overlay(self) -> None:
+        """Render a demo overlay showing zone bounds and labels."""
+        with self._lock:
+            img = self._image.copy()
+
+        draw = ImageDraw.Draw(img)
+        try:
+            font = ImageFont.load_default()
+        except Exception:
+            font = None
+
+        # Pick "ink" color depending on mode. For "1" and "L", 0 is black.
+        stroke = 0
+        fill_bg = 255
+
+        dirty: set[str] = set()
+        for zc in self._zones:
+            x0, y0 = zc.zone.x, zc.zone.y
+            x1, y1 = x0 + zc.zone.width - 1, y0 + zc.zone.height - 1
+            draw.rectangle([x0, y0, x1, y1], fill=fill_bg)
+            draw.rectangle([x0, y0, x1, y1], outline=stroke, width=2)
+
+            label = f"Zone name: {zc.name}\nPlugin: {zc.plugin}"
+            tx, ty = x0 + 4, y0 + 4
+            # simple label background for readability
+            zone_mid_point = (x0 + x1) / 2, (y0 + y1) / 2
+            label_mid_point = (0, 0)
+            try:
+                bbox = draw.textbbox((tx, ty), label, font=font)
+                label_mid_point = (
+                    zone_mid_point[0] - ((bbox[0] + bbox[2]) / 2) + x0,
+                    zone_mid_point[1] - ((bbox[1] + bbox[3]) / 2) + y0,
+                )
+            except Exception:
+                pass
+            draw.text(label_mid_point, label, fill=stroke, font=font)
+            dirty.add(zc.plugin)
+
+        try:
+            self._adapter.display(img, dirty_plugins=dirty)
+        except Exception as exc:
+            log.error("Display adapter error: %s", exc)
+
     # ------------------------------------------------------------------
 
     @classmethod
@@ -139,6 +185,7 @@ class LayoutEngine:
         for zone_name, zone_cfg in config.get("layout", {}).get("zones", {}).items():
             zones.append(
                 ZoneConfig(
+                    name=zone_name,
                     plugin=zone_cfg["plugin"],
                     zone=Zone(
                         x=zone_cfg.get("x", 0),

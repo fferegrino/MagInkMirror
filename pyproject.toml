@@ -82,6 +82,9 @@ ignore = [
 known-first-party = ["pytest_fixtures_fixtures"]
 
 [tool.ruff.lint.per-file-ignores]
+"src/maginkmirror/main.py" = [
+    "FBT003", # Boolean positional value in function call
+]
 "tests/*" = [
     "B011", # Do not `assert False`
     "D401", # First line of docstring should be in imperative mood
