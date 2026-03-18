@@ -6,8 +6,7 @@ import logging
 import threading
 import time
 from collections.abc import Callable
-from concurrent.futures import as_completed
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 
 from maginkmirror.plugins import BasePlugin, PluginData
 

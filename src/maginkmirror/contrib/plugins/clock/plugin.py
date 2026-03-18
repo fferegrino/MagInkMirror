@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
+from maginkmirror.core.fonts import load_font
 from maginkmirror.plugins import BasePlugin, PluginData, Zone
 
 PLUGIN_CLASS = "ClockPlugin"
@@ -36,13 +37,8 @@ class ClockPlugin(BasePlugin):
         draw = ImageDraw.Draw(image)
         payload = data.payload
 
-        # Try to load a nicer font; fall back to the PIL default
-        try:
-            time_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 72)
-            date_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
-        except OSError:
-            time_font = ImageFont.load_default()
-            date_font = ImageFont.load_default()
+        time_font = load_font(self.config, self.config.get("time_font"), int(self.config.get("time_font_size", 72)))
+        date_font = load_font(self.config, self.config.get("date_font"), int(self.config.get("date_font_size", 24)))
 
         fill = 0  # black
 

@@ -14,6 +14,9 @@ output_dir = ".maginkmirror"  # headless only
 display_refresh_interval = 30
 # model    = "epd7in5_V2"        # waveshare only
 
+[fonts]
+path = "@package:contrib/fonts"
+
 # ── Plugins ──────────────────────────────────────────────────────────────────
 
 # If omitted, all discovered plugins are loaded.
@@ -25,13 +28,23 @@ display_refresh_interval = 30
 [plugins.clock]
 timezone = "Europe/London"
 format   = "%H:%M:%S"
+time_font = "Merriweather"
+time_font_size = 72
+date_font = "Merriweather"
+date_font_size = 24
 
-# [plugins.weather]
-# provider  = "openmeteo"          # "openmeteo" (free, no key) | "openweathermap"
-# latitude  = 51.5074
-# longitude = -0.1278
-# units     = "metric"
-# # api_key = "YOUR_KEY"           # required for openweathermap
+[plugins.weather]
+provider  = "openmeteo"          # "openmeteo" (free, no key) | "openweathermap"
+latitude  = 51.5074
+longitude = -0.1278
+units     = "metric"
+# api_key = "YOUR_KEY"           # required for openweathermap
+temp_font = "Merriweather"
+temp_font_size = 52
+wind_font = "Merriweather"
+wind_font_size = 20
+condition_font = "Merriweather"
+condition_font_size = 20
 
 # [plugins.calendar]
 # # ics_url = "https://calendar.google.com/calendar/ical/…/basic.ics"

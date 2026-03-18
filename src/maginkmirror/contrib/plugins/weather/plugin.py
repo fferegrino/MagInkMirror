@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import urllib.request
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
+from maginkmirror.core.fonts import load_font
 from maginkmirror.plugins import BasePlugin, PluginData, Zone
 
 PLUGIN_CLASS = "WeatherPlugin"
@@ -74,17 +75,17 @@ class WeatherPlugin(BasePlugin):
         draw = ImageDraw.Draw(image)
         fill = 0
 
-        try:
-            big = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 52)
-            small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
-        except OSError:
-            big = small = ImageFont.load_default()
+        temp_font = load_font(self.config, self.config.get("temp_font"), int(self.config.get("temp_font_size", 52)))
+        wind_font = load_font(self.config, self.config.get("wind_font"), int(self.config.get("wind_font_size", 20)))
+        condition_font = load_font(
+            self.config, self.config.get("condition_font"), int(self.config.get("condition_font_size", 20))
+        )
 
         if data.error:
-            draw.text((10, 10), "Weather unavailable", font=small, fill=fill)
+            draw.text((10, 10), "Weather unavailable", font=condition_font, fill=fill)
             return
 
         p = data.payload
-        draw.text((20, 20), p.get("temp", "--"), font=big, fill=fill)
-        draw.text((20, 90), p.get("condition", ""), font=small, fill=fill)
-        draw.text((20, 116), f"Wind: {p.get('wind', '--')}", font=small, fill=fill)
+        draw.text((20, 20), p.get("temp", "--"), font=temp_font, fill=fill)
+        draw.text((20, 90), p.get("condition", ""), font=condition_font, fill=fill)
+        draw.text((20, 116), f"Wind: {p.get('wind', '--')}", font=wind_font, fill=fill)
