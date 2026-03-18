@@ -101,7 +101,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [{ name = "ruff", specifier = ">=0.15.6" }]
-fonts = []
 inky = [{ name = "inky", specifier = ">=2.3.0" }]
 
 [[package]]

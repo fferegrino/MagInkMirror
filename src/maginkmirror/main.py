@@ -28,7 +28,7 @@ log = logging.getLogger("maginkmirror")
 @app.command("preview-plugin")
 def preview_plugin(
     plugin_name: str,
-    out: Path = Option(Path(".maginkmirror") / "preview.png", "--out", help="Output PNG path."),
+    out: Path = Option(Path(".maginkmirror") / "preview.png", "--out", help="Output PNG path."),  # noqa: B008
     width: int | None = Option(None, "--width", help="Override render width (px)."),
     height: int | None = Option(None, "--height", help="Override render height (px)."),
 ):

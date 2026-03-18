@@ -8,8 +8,8 @@ font by filename/path via config and fall back to PIL's default.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from importlib.resources import as_file, files
+from pathlib import Path
 
 from PIL import ImageFont
 
@@ -34,6 +34,53 @@ def _resolve_font_root(config: dict) -> Path | object:
     return Path(d)
 
 
+def _candidate_font_names(font: str) -> list[str]:
+    """
+    Expand a font spec into candidate filenames.
+
+    If the user provides "Merriweather" (no extension) we try common extensions.
+    If they provide a filename/path with an extension we try it as-is.
+    """
+    if Path(font).suffix:
+        return [font]
+    return [font, f"{font}.ttf", f"{font}.otf"]
+
+
+def _try_load_truetype(path: str | Path, size: int):
+    try:
+        return ImageFont.truetype(str(path), size)
+    except Exception:
+        return None
+
+
+def _try_load_from_package(font_root: object, candidate_name: str, size: int):
+    # `font_root` can be a Traversable (from importlib.resources). We keep the
+    # implementation duck-typed by attempting `/` and `as_file`.
+    try:
+        resource_candidate = font_root / candidate_name  # type: ignore[operator]
+    except Exception:
+        return None
+
+    try:
+        with as_file(resource_candidate) as cand_path:
+            if cand_path.exists():
+                return _try_load_truetype(cand_path, size)
+    except Exception as exc:
+        log.debug("Failed to load package font %s: %s", resource_candidate, exc)
+        return None
+    return None
+
+
+def _filesystem_candidates(font_root: object, candidate_name: str) -> list[Path]:
+    candidates = [Path(candidate_name)]
+    try:
+        candidates.append(Path(font_root) / candidate_name)  # type: ignore[arg-type]
+    except Exception:
+        # font_root might be a package Traversable (or otherwise not a Path-like)
+        log.warning(f"Font root is not a Path-like: {font_root}")
+    return candidates
+
+
 def load_font(config: dict, font: str | None, size: int):
     """
     Load a font with best-effort fallbacks.
@@ -45,53 +92,24 @@ def load_font(config: dict, font: str | None, size: int):
     if not font:
         return ImageFont.load_default()
 
-    # Allow config to specify a basename like "Merriweather" (no extension).
-    font_names: list[str]
-    font_path = Path(font)
-    if font_path.suffix:
-        font_names = [font]
-    else:
-        font_names = [font, f"{font}.ttf", f"{font}.otf"]
-
     font_root = _resolve_font_root(config)
 
-    for candidate_name in font_names:
-        candidates: list[Path] = []
-        p = Path(candidate_name)
-        candidates.append(p)
+    for candidate_name in _candidate_font_names(font):
+        loaded = _try_load_from_package(font_root, candidate_name, size)
+        if loaded is not None:
+            return loaded
 
-        # If font_root is a package resource, join it as a Traversable.
-        resource_candidate = None
-        try:
-            resource_candidate = font_root / candidate_name  # type: ignore[operator]
-        except Exception:
-            resource_candidate = None
-
-        if resource_candidate is not None:
-            # Probe via a temp filesystem path if needed.
-            try:
-                with as_file(resource_candidate) as cand_path:
-                    if cand_path.exists():
-                        return ImageFont.truetype(str(cand_path), size)
-                        log.info(f"Loaded font {cand_path} at size {size}")
-            except Exception as exc:
-                log.debug("Failed to load package font %s: %s", resource_candidate, exc)
-
-        try:
-            # filesystem directory
-            candidates.append(Path(font_root) / candidate_name)  # type: ignore[arg-type]
-        except Exception:
-            pass
-
-        for cand in candidates:
-            try:
-                if cand.exists():
-                    return ImageFont.truetype(str(cand), size)
-            except Exception as exc:
-                log.debug("Failed to load font %s: %s", cand, exc)
+        for cand in _filesystem_candidates(font_root, candidate_name):
+            if not cand.exists():
+                continue
+            loaded = _try_load_truetype(cand, size)
+            if loaded is not None:
+                return loaded
 
     # Last-ditch: let PIL resolve by name (may work on some systems)
-    try:
-        return ImageFont.truetype(font, size)
-    except Exception:
-        return ImageFont.load_default()
+    loaded = _try_load_truetype(font, size)
+    if loaded is not None:
+        return loaded
+
+    log.warning("Failed to load font %r (size=%s). Using default font.", font, size)
+    return ImageFont.load_default()

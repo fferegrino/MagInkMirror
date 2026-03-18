@@ -45,6 +45,23 @@ class PluginRegistry:
         self.config = config
         self._plugins: dict[str, BasePlugin] = {}
 
+    def _build_plugin_config(self, plugin_config: dict) -> dict:
+        """
+        Create the config passed to a plugin instance.
+
+        Plugins currently get only their own `[plugins.<name>]` subsection.
+        Some helpers (like `maginkmirror.core.fonts.load_font`) expect global
+        sections such as `[fonts]`, so we expose those at the top level too.
+        """
+        merged: dict = {}
+        if isinstance(plugin_config, dict):
+            merged.update(plugin_config)
+
+        # Expose global font settings to every plugin.
+        if isinstance(self.config.get("fonts"), dict):
+            merged["fonts"] = self.config["fonts"]
+        return merged
+
     # ------------------------------------------------------------------
 
     def discover(self) -> None:
@@ -99,9 +116,7 @@ class PluginRegistry:
                 raise ImportError(f"No BasePlugin subclass found in {path}")
             cls = candidates[0]
 
-        return cls(config)
-
-    # ------------------------------------------------------------------
+        return cls(self._build_plugin_config(config))
 
     def all(self) -> dict[str, "BasePlugin"]:
         """Get all plugins."""
