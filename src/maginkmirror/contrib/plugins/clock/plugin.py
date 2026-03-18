@@ -28,7 +28,7 @@ class ClockPlugin(BasePlugin):
             tz = None  # fall back to local time
 
         now = datetime.now(tz=tz)
-        fmt = self.config.get("format", "%H:%M")
+        fmt = self.config.get("format", "%H:%M:%S")
         return PluginData(payload={"time": now.strftime(fmt), "date": now.strftime("%A, %d %B %Y")})
 
     def render(self, data: PluginData, image: Image.Image, zone: Zone) -> None:

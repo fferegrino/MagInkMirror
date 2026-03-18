@@ -44,7 +44,12 @@ def main(log_level: str = "INFO", once: bool = False):
 
     layout = LayoutEngine.from_config(config, plugins, adapter)
 
-    scheduler = Scheduler(plugins, layout.render_plugin)
+    scheduler_cfg = config.get("scheduler", {})
+    scheduler = Scheduler(
+        plugins,
+        layout.render_plugin,
+        min_plugin_interval=float(scheduler_cfg.get("min_plugin_interval", 0.0)),
+    )
 
     def _shutdown(sig, frame):
         """Shutdown the application gracefully."""

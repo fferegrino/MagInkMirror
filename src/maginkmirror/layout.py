@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from dataclasses import dataclass
 
 from PIL import Image
@@ -52,6 +53,7 @@ class LayoutEngine:
         zones: list[ZoneConfig],
         display_adapter,
         mode: str = "1",  # "1" = 1-bit, "L" = 8-bit grey
+        min_refresh_interval: float = 0.0,
     ) -> None:
         self._width = width
         self._height = height
@@ -62,6 +64,9 @@ class LayoutEngine:
         self._image = Image.new(mode, (width, height), color=255)  # white canvas
         self._lock = threading.Lock()
         self._dirty_zones: set[str] = set()
+        self._min_refresh_interval = float(min_refresh_interval)
+        self._last_refresh_at: float = 0.0
+        self._refresh_timer: threading.Timer | None = None
 
     # ------------------------------------------------------------------
 
@@ -99,13 +104,30 @@ class LayoutEngine:
 
         self._flush()
 
-    def _flush(self) -> None:
+    def _flush(self, *, force: bool = False) -> None:
+        now = time.monotonic()
+
+        if not force and self._min_refresh_interval > 0:
+            remaining = self._min_refresh_interval - (now - self._last_refresh_at)
+            if remaining > 0:
+                with self._lock:
+                    if self._refresh_timer is None or not self._refresh_timer.is_alive():
+                        self._refresh_timer = threading.Timer(remaining, self._flush, kwargs={"force": True})
+                        self._refresh_timer.daemon = True
+                        self._refresh_timer.start()
+                return
+
         with self._lock:
             dirty = set(self._dirty_zones)
             self._dirty_zones.clear()
+            if force:
+                self._refresh_timer = None
 
         if not dirty:
             return
+
+        if self._min_refresh_interval > 0:
+            self._last_refresh_at = now
 
         try:
             self._adapter.display(self._image.copy(), dirty_plugins=dirty)
@@ -126,6 +148,7 @@ class LayoutEngine:
         width = display_cfg.get("width", 800)
         height = display_cfg.get("height", 480)
         mode = display_cfg.get("mode", "1")
+        min_refresh_interval = display_cfg.get("min_display_refresh_interval", 0.0)
 
         zones: list[ZoneConfig] = []
         for zone_name, zone_cfg in config.get("layout", {}).get("zones", {}).items():
@@ -142,4 +165,4 @@ class LayoutEngine:
             )
             log.debug("Zone '%s' → plugin '%s'", zone_name, zone_cfg["plugin"])
 
-        return cls(width, height, plugins, zones, display_adapter, mode)
+        return cls(width, height, plugins, zones, display_adapter, mode, min_refresh_interval=float(min_refresh_interval))
