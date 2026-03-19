@@ -48,6 +48,10 @@ condition_font_size = 20
 
 [plugins.pokemon]
 
+[plugins.rss]
+feed_url = ["https://www.theguardian.com/uk/rss", "https://www.theguardian.com/world/rss"]
+max_items = 5
+
 # [plugins.calendar]
 # # ics_url = "https://calendar.google.com/calendar/ical/…/basic.ics"
 # max_events = 5
@@ -77,10 +81,17 @@ height = 240
 
 [layout.zones.pokemon]
 plugin = "pokemon"
-x      = 400
+x      = 600
 y      = 120
 width  = 200
 height = 240
+
+[layout.zones.rss]
+plugin = "rss"
+x      = 0
+y      = 360
+width  = 800
+height = 120
 
 # [layout.zones.calendar]
 # plugin = "calendar"
