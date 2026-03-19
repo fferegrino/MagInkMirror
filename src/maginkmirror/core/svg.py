@@ -16,6 +16,7 @@ import hashlib
 import io
 import logging
 import os
+import re
 import shutil
 import subprocess
 from importlib.resources import as_file, files
@@ -59,9 +60,20 @@ def _resolve_svg_asset(svg_spec: str | Path) -> tuple[bytes, str]:
     return p.read_bytes(), spec
 
 
-def _cache_path(*, cache_dir: Path, svg_bytes: bytes, width: int, height: int, mode: str) -> Path:
+def _cache_path(
+    *,
+    cache_dir: Path,
+    svg_bytes: bytes,
+    width: int,
+    height: int,
+    mode: str,
+    stretch: bool,
+    background_color: str | None,
+) -> Path:
     h = hashlib.sha256(svg_bytes).hexdigest()
-    name = f"svg_{h[:16]}_{width}x{height}_{mode}.png"
+    bg = background_color or "none"
+    stretch_token = "stretch" if stretch else "fit"
+    name = f"svg_{h[:16]}_{width}x{height}_{mode}_{stretch_token}_{bg}.png"
     return cache_dir / name
 
 
@@ -69,7 +81,41 @@ def _ensure_cache_dir(cache_dir: Path) -> None:
     cache_dir.mkdir(parents=True, exist_ok=True)
 
 
-def _render_svg_png(svg_bytes: bytes, width: int, height: int, *, background_color: str | None) -> bytes:
+def _force_preserve_aspect_none(svg_bytes: bytes) -> bytes:
+    """
+    Force root <svg> to use `preserveAspectRatio="none"`.
+
+    This makes renderers stretch content to the requested viewport.
+    """
+    text = svg_bytes.decode("utf-8", errors="ignore")
+    m = re.search(r"<svg\b[^>]*>", text, flags=re.IGNORECASE | re.DOTALL)
+    if not m:
+        return svg_bytes
+
+    start, end = m.span()
+    tag = text[start:end]
+    if re.search(r"preserveAspectRatio\s*=", tag, flags=re.IGNORECASE):
+        new_tag = re.sub(
+            r'preserveAspectRatio\s*=\s*(".*?"|\'.*?\')',
+            'preserveAspectRatio="none"',
+            tag,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+    else:
+        new_tag = tag[:-1] + ' preserveAspectRatio="none">'
+
+    text = text[:start] + new_tag + text[end:]
+    return text.encode("utf-8")
+
+
+def _render_svg_png(
+    svg_bytes: bytes,
+    width: int,
+    height: int,
+    *,
+    background_color: str | None,
+    stretch: bool,
+) -> bytes:
     """
     Render SVG bytes into a PNG (bytes) using the best available backend.
 
@@ -77,6 +123,9 @@ def _render_svg_png(svg_bytes: bytes, width: int, height: int, *, background_col
       1. `cairosvg` Python package (if installed)
       2. `rsvg-convert` command (if available on PATH)
     """
+    if stretch:
+        svg_bytes = _force_preserve_aspect_none(svg_bytes)
+
     # 1) cairosvg
     try:
         import cairosvg  # type: ignore[import-not-found]
@@ -125,6 +174,7 @@ def render_svg_to_image(
     mode: str = "RGBA",
     cache_dir: str | Path | None = None,
     background_color: str | None = None,
+    stretch: bool = True,
 ) -> Image.Image:
     """
     Rasterize `svg_spec` to a Pillow image of `(width, height)`.
@@ -138,6 +188,8 @@ def render_svg_to_image(
     - `cache_dir`: where to store cached PNGs (defaults to `.maginkmirror/cache/svg`)
     - `background_color`: optional renderer background color (often needed to avoid
       transparency issues, depending on mode/renderer)
+    - `stretch`: if true, force the image to exactly `(width, height)`;
+      if false, preserve aspect ratio and center within the target size.
 
     """
     svg_bytes, _source = _resolve_svg_asset(svg_spec)
@@ -147,15 +199,39 @@ def render_svg_to_image(
     cache_dir_p = Path(cache_dir)
     _ensure_cache_dir(cache_dir_p)
 
-    cached_png = _cache_path(cache_dir=cache_dir_p, svg_bytes=svg_bytes, width=width, height=height, mode=mode)
+    cached_png = _cache_path(
+        cache_dir=cache_dir_p,
+        svg_bytes=svg_bytes,
+        width=width,
+        height=height,
+        mode=mode,
+        stretch=stretch,
+        background_color=background_color,
+    )
     if cached_png.exists():
         img = Image.open(cached_png)
         return img.convert(mode)
 
-    png_bytes = _render_svg_png(svg_bytes, width, height, background_color=background_color)
+    png_bytes = _render_svg_png(
+        svg_bytes,
+        width,
+        height,
+        background_color=background_color,
+        stretch=stretch,
+    )
 
-    img = Image.open(io.BytesIO(png_bytes))
-    img = img.convert("RGBA").resize((width, height))
+    img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    if stretch:
+        img = img.resize((width, height))
+    else:
+        # Preserve aspect ratio and center the rendered SVG in target bounds.
+        fit = img.copy()
+        fit.thumbnail((width, height))
+        canvas = Image.new("RGBA", (width, height), color=(0, 0, 0, 0))
+        x = (width - fit.width) // 2
+        y = (height - fit.height) // 2
+        canvas.paste(fit, (x, y), mask=fit.split()[-1])
+        img = canvas
     img = img.convert(mode)
 
     tmp = cached_png.with_suffix(".tmp.png")

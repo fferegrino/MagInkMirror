@@ -7,8 +7,8 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 
 from maginkmirror.core.fonts import load_font
-from maginkmirror.plugins import BasePlugin, PluginData, Zone
 from maginkmirror.core.svg import render_svg_to_image
+from maginkmirror.plugins import BasePlugin, PluginData, Zone
 
 PLUGIN_CLASS = "ClockPlugin"
 
@@ -41,8 +41,9 @@ class ClockPlugin(BasePlugin):
         time_font = load_font(self.config, self.config.get("time_font"), int(self.config.get("time_font_size", 24)))
         date_font = load_font(self.config, self.config.get("date_font"), int(self.config.get("date_font_size", 72)))
 
-
-        clock_svg = render_svg_to_image("@package:contrib/plugins/clock/backgrounds/dusk.svg", width=zone.width, height=zone.height)
+        clock_svg = render_svg_to_image(
+            "@package:contrib/plugins/clock/backgrounds/dusk.svg", width=zone.width, height=zone.height
+        )
         image.paste(clock_svg, (0, 0))
 
         fill = (255, 255, 255)
