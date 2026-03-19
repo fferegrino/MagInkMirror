@@ -52,13 +52,9 @@ condition_font_size = 20
 feed_url = ["https://www.theguardian.com/uk/rss", "https://www.theguardian.com/world/rss"]
 max_items = 5
 
-# [plugins.calendar]
-# # ics_url = "https://calendar.google.com/calendar/ical/…/basic.ics"
-# max_events = 5
-
-# [plugins.news]
-# feed_url    = "https://feeds.bbci.co.uk/news/rss.xml"
-# max_items   = 5
+[plugins.todoist]
+access_token = "${TODOIST_ACCESS_TOKEN}"
+project_id = "${TODOIST_PROJECT_ID}"
 
 # ── Layout ───────────────────────────────────────────────────────────────────
 #
@@ -79,6 +75,13 @@ y      = 120
 width  = 200
 height = 240
 
+[layout.zones.todoist]
+plugin = "todoist"
+x      = 200
+y      = 120
+width  = 400
+height = 240
+
 [layout.zones.pokemon]
 plugin = "pokemon"
 x      = 600
@@ -92,17 +95,3 @@ x      = 0
 y      = 360
 width  = 800
 height = 120
-
-# [layout.zones.calendar]
-# plugin = "calendar"
-# x      = 400
-# y      = 120
-# width  = 400
-# height = 180
-
-# [layout.zones.news]
-# plugin = "news"
-# x      = 0
-# y      = 300
-# width  = 800
-# height = 180
