@@ -46,6 +46,8 @@ wind_font_size = 20
 condition_font = "Merriweather"
 condition_font_size = 20
 
+[plugins.pokemon]
+
 # [plugins.calendar]
 # # ics_url = "https://calendar.google.com/calendar/ical/…/basic.ics"
 # max_events = 5
@@ -70,8 +72,15 @@ height = 120
 plugin = "weather"
 x      = 0
 y      = 120
-width  = 400
-height = 180
+width  = 200
+height = 240
+
+[layout.zones.pokemon]
+plugin = "pokemon"
+x      = 400
+y      = 120
+width  = 200
+height = 240
 
 # [layout.zones.calendar]
 # plugin = "calendar"
