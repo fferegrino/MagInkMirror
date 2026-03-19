@@ -50,10 +50,9 @@ class PokemonPlugin(BasePlugin):
             body = json.loads(resp.read())
 
         types = [t["type"]["name"] for t in body.get("types", []) if "type" in t]
-        sprite_url = (
-            body.get("sprites", {}).get("front_default")
-            or body.get("sprites", {}).get("other", {}).get("official-artwork", {}).get("front_default")
-        )
+        sprite_url = body.get("sprites", {}).get("front_default") or body.get("sprites", {}).get("other", {}).get(
+            "official-artwork", {}
+        ).get("front_default")
 
         sprite_bytes: bytes | None = None
         if sprite_url and bool(self.config.get("show_sprite", True)):
@@ -77,7 +76,9 @@ class PokemonPlugin(BasePlugin):
         draw = ImageDraw.Draw(image)
         fill = 0
 
-        name_font = load_font(self.config, self.config.get("name_font", "Merriweather"), int(self.config.get("name_font_size", 28)))
+        name_font = load_font(
+            self.config, self.config.get("name_font", "Merriweather"), int(self.config.get("name_font_size", 28))
+        )
         details_font = load_font(
             self.config, self.config.get("details_font", "Merriweather"), int(self.config.get("details_font_size", 16))
         )
@@ -125,9 +126,8 @@ class PokemonPlugin(BasePlugin):
         weight_hg = p.get("weight")
         extra = []
         if isinstance(height_dm, (int, float)):
-            extra.append(f"H: {height_dm/10:.1f}m")
+            extra.append(f"H: {height_dm / 10:.1f}m")
         if isinstance(weight_hg, (int, float)):
-            extra.append(f"W: {weight_hg/10:.1f}kg")
+            extra.append(f"W: {weight_hg / 10:.1f}kg")
         if extra:
             draw.text((tx, y2 + 18), "  ".join(extra), font=details_font, fill=fill)
-
