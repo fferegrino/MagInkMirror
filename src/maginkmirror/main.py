@@ -36,6 +36,9 @@ def preview_plugin(
     config = load_config("config.toml")
     display_cfg = config.get("display", {})
     mode = display_cfg.get("mode", "1")
+    color_enabled = bool(display_cfg.get("color_enabled", False))
+    if color_enabled and mode in {"1", "L"}:
+        mode = "RGB"
 
     registry = PluginRegistry(config)
     registry.discover()

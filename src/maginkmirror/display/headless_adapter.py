@@ -15,16 +15,21 @@ class HeadlessAdapter(BaseDisplayAdapter):
     No hardware required. Useful for CI, layout debugging, and screenshot generation.
     """
 
-    def __init__(self, output_dir: str = "/tmp/inkmirror_output") -> None:
+    def __init__(self, output_dir: str = "/tmp/inkmirror_output", preserve_color: bool = True) -> None:
         self._out = Path(output_dir)
         self._out.mkdir(parents=True, exist_ok=True)
         self._frame = 0
+        self._preserve_color = preserve_color
         log.info("HeadlessAdapter: output → %s", self._out)
 
     def display(self, image: Image.Image, dirty_plugins: set[str]) -> None:
         """Save the image to the output directory."""
         fname = self._out / f"frame_{self._frame:04d}.png"
-        image.convert("RGB").save(fname)
+        if self._preserve_color:
+            # Keep the rendered mode (RGB/RGBA/L/1) as-is.
+            image.save(fname)
+        else:
+            image.convert("RGB").save(fname)
         log.info("Frame %04d saved (%s dirty)", self._frame, dirty_plugins)
         self._frame += 1
 

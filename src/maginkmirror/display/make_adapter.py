@@ -8,7 +8,8 @@ def make_adapter(config: dict) -> BaseDisplayAdapter:
     driver = config.get("display", {}).get("driver", "headless")
     if driver == "headless":
         out = config.get("display", {}).get("output_dir", "/tmp/maginkmirror_output")
-        return HeadlessAdapter(output_dir=out)
+        preserve_color = bool(config.get("display", {}).get("preserve_color", True))
+        return HeadlessAdapter(output_dir=out, preserve_color=preserve_color)
     elif driver == "inky":
         model = config.get("display", {}).get("model", "auto")
         return InkyImpressionAdapter(model=model)

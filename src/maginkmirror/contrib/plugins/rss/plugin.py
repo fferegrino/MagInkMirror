@@ -41,7 +41,6 @@ def _local_name(tag: str) -> str:
 
     Example: `{http://purl.org/rss/1.0/}item` → `item`
     """
-
     if "}" in tag:
         return tag.split("}", 1)[1]
     return tag
@@ -71,7 +70,6 @@ def _parse_rss_items(xml_bytes: bytes, *, source: str) -> list[RssItem]:
     We intentionally avoid strict schema assumptions and rely on local tag
     names so namespaces don't break parsing.
     """
-
     try:
         root = ET.fromstring(xml_bytes)
     except ET.ParseError:
@@ -107,7 +105,6 @@ def _shorten_to_width(draw: ImageDraw.ImageDraw, text: str, *, font, max_width: 
     This is conservative and may be slower, but RSS titles are short enough
     for typical refresh intervals.
     """
-
     text = text.strip()
     if not text:
         return ""
@@ -273,4 +270,3 @@ class RssPlugin(BasePlugin):
             # Stop if we run out of vertical space.
             if y >= zone.height:
                 break
-

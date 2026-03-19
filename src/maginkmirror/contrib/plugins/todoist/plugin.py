@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from PIL import Image, ImageDraw
@@ -36,7 +36,6 @@ def _as_due_str(due: dict[str, Any] | None) -> str | None:
     Todoist API v1 returns a due object with a human readable `string`
     (in the authenticated user's timezone). We prefer that for display.
     """
-
     if not due:
         return None
 
@@ -60,7 +59,6 @@ def _due_sort_key(due: dict[str, Any] | None) -> tuple[float, str]:
     Returns `(timestamp, "")` where timestamp is derived from `due.date`.
     Undated tasks sort last.
     """
-
     if not due or not isinstance(due, dict):
         return (float("inf"), "")
 
@@ -77,7 +75,7 @@ def _due_sort_key(due: dict[str, Any] | None) -> tuple[float, str]:
         if dt.tzinfo is None:
             # `due.date` can be a "floating" datetime without timezone info.
             # For stable ordering, treat it as UTC.
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return (dt.timestamp(), "")
     except Exception:
         return (float("inf"), "")
@@ -191,7 +189,12 @@ class TodoistPlugin(BasePlugin):
             if cursor is None or cursor == "":
                 break
 
-        collected.sort(key=lambda t: (_due_sort_key(t.get("due") if isinstance(t.get("due"), dict) else None)[0], str(t.get("id") or "")))
+        collected.sort(
+            key=lambda t: (
+                _due_sort_key(t.get("due") if isinstance(t.get("due"), dict) else None)[0],
+                str(t.get("id") or ""),
+            )
+        )
 
         selected = collected[:max_items]
 
@@ -214,7 +217,9 @@ class TodoistPlugin(BasePlugin):
         fill = 0
 
         headline_font = load_font(
-            self.config, self.config.get("headline_font", "Merriweather"), int(self.config.get("headline_font_size", 20))
+            self.config,
+            self.config.get("headline_font", "Merriweather"),
+            int(self.config.get("headline_font_size", 20)),
         )
         task_font = load_font(
             self.config, self.config.get("task_font", "Merriweather"), int(self.config.get("task_font_size", 16))
@@ -262,4 +267,3 @@ class TodoistPlugin(BasePlugin):
 
             if y >= zone.height:
                 break
-

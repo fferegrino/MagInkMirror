@@ -6,6 +6,12 @@ driver     = "headless"          # "headless" | "waveshare" | "it8951"
 width      = 800
 height     = 480
 mode       = "L"                 # "1" = 1-bit, "L" = 8-bit greyscale
+# Optional: enable color composition for plugin rendering.
+# When true and mode is "1"/"L", MagInkMirror will render zones in RGB.
+# Useful for color displays and SVG/image assets.
+color_enabled = true
+# headless-only: if false, force saved frames to RGB conversion.
+# preserve_color = true
 output_dir = ".maginkmirror"  # headless only
 # Global display refresh cadence (seconds).
 # - Set to -1 to refresh on each plugin update (plugin cadence).
@@ -29,9 +35,9 @@ path = "@package:contrib/fonts"
 timezone = "Europe/London"
 format   = "%H:%M:%S"
 time_font = "Merriweather"
-time_font_size = 72
+date_font_size = 60
 date_font = "Merriweather"
-date_font_size = 24
+time_font_size = 24
 
 [plugins.weather]
 provider  = "openmeteo"          # "openmeteo" (free, no key) | "openweathermap"
@@ -52,9 +58,6 @@ condition_font_size = 20
 feed_url = ["https://www.theguardian.com/uk/rss", "https://www.theguardian.com/world/rss"]
 max_items = 5
 
-[plugins.todoist]
-access_token = "${TODOIST_ACCESS_TOKEN}"
-project_id = "${TODOIST_PROJECT_ID}"
 
 # ── Layout ───────────────────────────────────────────────────────────────────
 #
@@ -75,12 +78,12 @@ y      = 120
 width  = 200
 height = 240
 
-[layout.zones.todoist]
-plugin = "todoist"
-x      = 200
-y      = 120
-width  = 400
-height = 240
+# [layout.zones.todoist]
+# plugin = "todoist"
+# x      = 200
+# y      = 120
+# width  = 400
+# height = 240
 
 [layout.zones.pokemon]
 plugin = "pokemon"

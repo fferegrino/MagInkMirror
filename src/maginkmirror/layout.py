@@ -180,6 +180,13 @@ class LayoutEngine:
         width = display_cfg.get("width", 800)
         height = display_cfg.get("height", 480)
         mode = display_cfg.get("mode", "1")
+        color_enabled = bool(display_cfg.get("color_enabled", False))
+
+        # Optional color pipeline:
+        # when enabled, render master/zone images in RGB unless user already
+        # selected a color mode explicitly.
+        if color_enabled and mode in {"1", "L"}:
+            mode = "RGB"
 
         zones: list[ZoneConfig] = []
         for zone_name, zone_cfg in config.get("layout", {}).get("zones", {}).items():
