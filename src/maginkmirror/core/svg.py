@@ -6,8 +6,9 @@ rasterized before compositing.
 
 This module provides a small API for plugins to:
   1. Load an SVG asset (filesystem path, or @package:... resource)
-  2. Rasterize it into a Pillow image at the requested size
-  3. Cache the raster output on disk so rendering happens once
+  2. Optionally expand ``{{ name }}`` placeholders (Jinja-style delimiters, no engine)
+  3. Rasterize it into a Pillow image at the requested size
+  4. Cache the raster output on disk so rendering happens once
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ import shutil
 import subprocess
 from importlib.resources import as_file, files
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Mapping
 
 from PIL import Image
 
@@ -29,6 +30,9 @@ log = logging.getLogger(__name__)
 
 
 SVGMode = Literal["RGBA", "RGB", "L", "1", "P"]
+
+# Jinja-like placeholders: ``{{var}}``, ``{{ var }}`` (ASCII identifier only).
+_SVG_TEMPLATE_VAR = re.compile(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}")
 
 
 def _resolve_svg_asset(svg_spec: str | Path) -> tuple[bytes, str]:
@@ -58,6 +62,35 @@ def _resolve_svg_asset(svg_spec: str | Path) -> tuple[bytes, str]:
 
     p = Path(spec)
     return p.read_bytes(), spec
+
+
+def _expand_template_vars(svg_text: str, template_vars: Mapping[str, str]) -> str:
+    """
+    Replace ``{{ name }}`` spans with ``template_vars[name]``.
+
+    Unknown names are left unchanged. No filters, conditions, or includes —
+    only fixed ``{{`` / ``}}`` delimiters and ASCII identifiers ``name``.
+    """
+
+    if not template_vars:
+        return svg_text
+
+    def subst(m: re.Match[str]) -> str:
+        name = m.group(1)
+        if name not in template_vars:
+            return m.group(0)
+        return template_vars[name]
+
+    return _SVG_TEMPLATE_VAR.sub(subst, svg_text)
+
+
+def _prepare_svg_bytes(svg_bytes: bytes, template_vars: Mapping[str, str] | None) -> bytes:
+    """Decode SVG, expand optional ``{{ var }}`` placeholders, re-encode as UTF-8."""
+    if not template_vars:
+        return svg_bytes
+    text = svg_bytes.decode("utf-8", errors="replace")
+    text = _expand_template_vars(text, template_vars)
+    return text.encode("utf-8")
 
 
 def _cache_path(
@@ -175,6 +208,7 @@ def render_svg_to_image(
     cache_dir: str | Path | None = None,
     background_color: str | None = None,
     stretch: bool = True,
+    template_vars: Mapping[str, str] | None = None,
 ) -> Image.Image:
     """
     Rasterize `svg_spec` to a Pillow image of `(width, height)`.
@@ -190,9 +224,13 @@ def render_svg_to_image(
       transparency issues, depending on mode/renderer)
     - `stretch`: if true, force the image to exactly `(width, height)`;
       if false, preserve aspect ratio and center within the target size.
+    - `template_vars`: optional mapping of variable names to strings. In the SVG,
+      use Jinja-style markers ``{{name}}`` or ``{{ name }}`` (ASCII identifiers
+      only). Missing keys leave the marker as-is. Cache keys use the expanded SVG.
 
     """
     svg_bytes, _source = _resolve_svg_asset(svg_spec)
+    svg_bytes = _prepare_svg_bytes(svg_bytes, template_vars)
 
     if cache_dir is None:
         cache_dir = Path(".maginkmirror") / "cache" / "svg"

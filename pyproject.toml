@@ -5,6 +5,8 @@ description = "A MagicMirror clone for e-ink displays and Raspberry Pi"
 readme = "readme.md"
 requires-python = ">=3.13"
 dependencies = [
+    "astral>=3.2",
+    "colour>=0.1.5",
     "pillow>=12.1.1",
     "typer>=0.24.1",
 ]
