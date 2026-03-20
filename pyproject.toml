@@ -21,6 +21,9 @@ dev = [
 inky = [
     "inky>=2.3.0",
 ]
+svg = [
+    "cairosvg>=2.9.0",
+]
 
 [tool.bumpversion]
 current_version = "0.1.0"

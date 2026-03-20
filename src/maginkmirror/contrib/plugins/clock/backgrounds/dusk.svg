@@ -3,8 +3,8 @@
     <title>dusk</title>
     <defs>
         <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
-            <stop stop-color="#00326F" offset="0%"></stop>
-            <stop stop-color="#005F8D" offset="100%"></stop>
+            <stop stop-color="{{ top_color }}" offset="0%"></stop>
+            <stop stop-color="{{ bottom_color }}" offset="100%"></stop>
         </linearGradient>
     </defs>
     <g id="dusk" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">

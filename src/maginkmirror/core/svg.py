@@ -20,9 +20,10 @@ import os
 import re
 import shutil
 import subprocess
+from collections.abc import Mapping
 from importlib.resources import as_file, files
 from pathlib import Path
-from typing import Literal, Mapping
+from typing import Literal
 
 from PIL import Image
 
@@ -71,7 +72,6 @@ def _expand_template_vars(svg_text: str, template_vars: Mapping[str, str]) -> st
     Unknown names are left unchanged. No filters, conditions, or includes —
     only fixed ``{{`` / ``}}`` delimiters and ASCII identifiers ``name``.
     """
-
     if not template_vars:
         return svg_text
 
@@ -231,7 +231,6 @@ def render_svg_to_image(
     """
     svg_bytes, _source = _resolve_svg_asset(svg_spec)
     svg_bytes = _prepare_svg_bytes(svg_bytes, template_vars)
-
     if cache_dir is None:
         cache_dir = Path(".maginkmirror") / "cache" / "svg"
     cache_dir_p = Path(cache_dir)
