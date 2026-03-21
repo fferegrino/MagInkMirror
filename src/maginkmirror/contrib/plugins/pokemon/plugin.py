@@ -50,6 +50,43 @@ TYPE_COLORS = {
 
 _LIGHT_BG_LUM_THRESHOLD = 0.55
 
+# Ascenders + descenders; stabilizes textbbox line metrics (same idea as CSS line-height).
+_REFERENCE_LINE_TEXT = "gjylth"
+
+
+def _reference_bbox(draw, font) -> tuple[int, int, int, int]:
+    """One textbbox per font per frame — use for stable line height and y advance."""
+    return draw.textbbox((0, 0), _REFERENCE_LINE_TEXT, font=font)
+
+
+def _darken(color: Color, amount: float) -> Color:
+    """Linear blend toward black. ``amount`` in 0..1 (0 = unchanged, 1 = black)."""
+    amount = max(0.0, min(1.0, amount))
+    r, g, b = color.get_rgb()
+    r *= 1.0 - amount
+    g *= 1.0 - amount
+    b *= 1.0 - amount
+    out = Color()
+    out.set_rgb((r, g, b))
+    return out
+
+
+def _lighten(color: Color, amount: float) -> Color:
+    """Linear blend toward white. ``amount`` in 0..1 (0 = unchanged, 1 = white)."""
+    amount = max(0.0, min(1.0, amount))
+    r, g, b = color.get_rgb()
+    r = r + (1.0 - r) * amount
+    g = g + (1.0 - g) * amount
+    b = b + (1.0 - b) * amount
+    out = Color()
+    out.set_rgb((r, g, b))
+    return out
+
+
+def _color_rgb_u8(color: Color) -> tuple[int, int, int]:
+    r, g, b = color.get_rgb()
+    return (int(r * 255), int(g * 255), int(b * 255))
+
 
 def _type_fill_rgb(type_name: str) -> tuple[int, int, int]:
     c = TYPE_COLORS.get(type_name.lower())
@@ -72,6 +109,7 @@ def _draw_types_row(
     types: list,
     *,
     font,
+    ref_bbox: tuple[int, int, int, int],
 ) -> int:
     """Draw one rounded box per type. Returns row height."""
     display = [str(t) for t in types] if types else ["unknown"]
@@ -79,7 +117,7 @@ def _draw_types_row(
     pad_y = max(3, zone.height // 120)
     gap = max(6, zone.width // 60)
 
-    reference = draw.textbbox((0, 0), "gjylth", font=font)
+    line_h = ref_bbox[3] - ref_bbox[1]
 
     box_items: list[tuple[str, str, tuple, int, int]] = []
     for t in display:
@@ -87,10 +125,9 @@ def _draw_types_row(
         text = str(t).capitalize()
         tb = draw.textbbox((0, 0), text, font=font)
         tw = tb[2] - tb[0]
-        th = reference[3] - reference[1]
-        box_items.append((text, key, tb, tw, th))
+        box_items.append((text, key, tb, tw, line_h))
 
-    uniform_box_h = max((th + 2 * pad_y for _t, _k, _tb, _tw, th in box_items), default=0)
+    uniform_box_h = line_h + 2 * pad_y
     row_h = uniform_box_h
 
     total_w = sum(tw + 2 * pad_x for _t, _k, _tb, tw, _th in box_items) + gap * max(0, len(box_items) - 1)
@@ -107,7 +144,7 @@ def _draw_types_row(
         r = min(4, max(1, box_h // 4))
         draw.rounded_rectangle((cx, box_y, cx + box_w, box_y + box_h), radius=r, fill=bg)
         tx = cx + pad_x - tb[0]
-        ty = box_y + (box_h - th) // 2 - reference[1] + 1
+        ty = box_y + (box_h - th) // 2 - ref_bbox[1] + 1
         draw.text((tx, ty), text, font=font, fill=tfill)
         cx += box_w + gap
 
@@ -122,13 +159,17 @@ def _draw_centered_text(
     font,
     y: int,
     fill: tuple[int, int, int],
+    ref_bbox: tuple[int, int, int, int],
 ) -> int:
-    bbox = draw.textbbox((0, 0), text, font=font)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
+    """Center horizontally; vertically center string in reference line; return ref line height."""
+    tb = draw.textbbox((0, 0), text, font=font)
+    tw = tb[2] - tb[0]
+    text_h = tb[3] - tb[1]
+    line_h = ref_bbox[3] - ref_bbox[1]
     x = int(round((zone.width - tw) / 2))
-    draw.text((x, y), text, font=font, fill=fill)
-    return th
+    ty = y + (line_h - text_h) // 2 - tb[1]
+    draw.text((x, ty), text, font=font, fill=fill)
+    return line_h
 
 
 def _paste_sprite_zone(image: Image.Image, zone: Zone, sprite_bytes: bytes) -> tuple[int, int]:
@@ -213,9 +254,12 @@ class PokemonPlugin(BasePlugin):
     def render(self, data: PluginData, image: Image.Image, zone: Zone) -> None:
         """Draw name, types, and stats into the zone."""
         draw = ImageDraw.Draw(image)
-        species_color = Color(data.payload.get("species_color", "#ffffff"))
-        fill = species_color.get_rgb()
-        fill = (int(fill[0] * 255), int(fill[1] * 255), int(fill[2] * 255))
+        species_color = data.payload.get("species_color")
+        species_color = "black" if species_color == "white" else species_color
+        species_color = Color(species_color)
+        text_fill = _color_rgb_u8(_darken(species_color, 0.4))
+        background_fill = _color_rgb_u8(_lighten(species_color, 0.9))
+        draw.rectangle((0, 0, zone.width, zone.height), fill=background_fill)
 
         name_font = load_font(
             self.config, self.config.get("name_font", "Merriweather"), int(self.config.get("name_font_size", 25))
@@ -225,7 +269,7 @@ class PokemonPlugin(BasePlugin):
         )
 
         if data.error:
-            draw.text((10, 10), "Pokémon unavailable", font=details_font, fill=fill)
+            draw.text((10, 10), "Pokémon unavailable", font=details_font, fill=0)
             return
 
         p = data.payload or {}
@@ -245,10 +289,15 @@ class PokemonPlugin(BasePlugin):
         gap = max(2, zone.height_percent_int(2))
         y_cursor = (sprite_top_y + sprite_h + gap) if sprite_h else zone.height_percent_int(5)
 
-        title = f"#{pid} {name.capitalize() if name else name}"
-        y_cursor += _draw_centered_text(draw, zone, title, font=name_font, y=y_cursor, fill=fill) + gap
+        ref_name = _reference_bbox(draw, name_font)
+        ref_details = _reference_bbox(draw, details_font)
 
-        types_h = _draw_types_row(draw, zone, y_cursor, types, font=details_font)
+        title = f"#{pid} {name.capitalize() if name else name}"
+        y_cursor += (
+            _draw_centered_text(draw, zone, title, font=name_font, y=y_cursor, fill=text_fill, ref_bbox=ref_name) + gap
+        )
+
+        types_h = _draw_types_row(draw, zone, y_cursor, types, font=details_font, ref_bbox=ref_details)
         y_cursor += types_h + gap
 
         # Show height/weight when present (PokeAPI uses decimeters/hectograms).
@@ -260,4 +309,6 @@ class PokemonPlugin(BasePlugin):
         if isinstance(weight_hg, (int, float)):
             extra.append(f"W: {weight_hg / 10:.1f}kg")
         if extra:
-            _draw_centered_text(draw, zone, "  ".join(extra), font=details_font, y=y_cursor, fill=fill)
+            _draw_centered_text(
+                draw, zone, "  ".join(extra), font=details_font, y=y_cursor, fill=text_fill, ref_bbox=ref_details
+            )
