@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from PIL import Image, ImageDraw, ImageFont
 
 from maginkmirror.plugins import BasePlugin, PluginData, Zone
+from maginkmirror.plugins.plugin_registry import LAYOUT_ZONE_KEYS
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +22,10 @@ class ZoneConfig:
     """The zone name (from config)."""
 
     plugin: str
-    """The plugin to render in this zone."""
+    """The plugin kind (``plugin =`` in the zone table)."""
+
+    instance_key: str
+    """Registry/scheduler key: plugin kind if the zone has no extra keys, else the zone name."""
 
     zone: Zone
     """The zone to render in."""
@@ -95,7 +99,7 @@ class LayoutEngine:
             log.debug("[%s] no change – skipping render", plugin_name)
             return False
 
-        matching = [zc for zc in self._zones if zc.plugin == plugin_name]
+        matching = [zc for zc in self._zones if zc.instance_key == plugin_name]
         if not matching:
             log.debug("[%s] no zone configured – skipping", plugin_name)
             return False
@@ -159,7 +163,7 @@ class LayoutEngine:
             except Exception:
                 pass
             draw.text(label_mid_point, label, fill=stroke, font=font)
-            dirty.add(zc.plugin)
+            dirty.add(zc.instance_key)
 
         try:
             self._adapter.display(img, dirty_plugins=dirty)
@@ -190,10 +194,15 @@ class LayoutEngine:
 
         zones: list[ZoneConfig] = []
         for zone_name, zone_cfg in config.get("layout", {}).get("zones", {}).items():
+            if not isinstance(zone_cfg, dict) or "plugin" not in zone_cfg:
+                continue
+            extras = {k: v for k, v in zone_cfg.items() if k not in LAYOUT_ZONE_KEYS}
+            instance_key = zone_name if extras else zone_cfg["plugin"]
             zones.append(
                 ZoneConfig(
                     name=zone_name,
                     plugin=zone_cfg["plugin"],
+                    instance_key=instance_key,
                     zone=Zone(
                         x=zone_cfg.get("x", 0),
                         y=zone_cfg.get("y", 0),
@@ -202,6 +211,6 @@ class LayoutEngine:
                     ),
                 )
             )
-            log.debug("Zone '%s' → plugin '%s'", zone_name, zone_cfg["plugin"])
+            log.debug("Zone '%s' → plugin '%s' (instance %s)", zone_name, zone_cfg["plugin"], instance_key)
 
         return cls(width, height, plugins, zones, display_adapter, mode)

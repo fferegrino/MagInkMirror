@@ -47,8 +47,8 @@ def preview_plugin(
         raise SystemExit(f"Plugin not found: {plugin_name!r}")
 
     zone_cfg = None
-    for _, zc in config.get("layout", {}).get("zones", {}).items():
-        if zc.get("plugin") == plugin_name:
+    for zn, zc in config.get("layout", {}).get("zones", {}).items():
+        if zn == plugin_name or zc.get("plugin") == plugin_name:
             zone_cfg = zc
             break
 
@@ -97,12 +97,10 @@ def main(
     registry.discover()
     plugins = registry.all()
 
-    config = load_config("config.toml")
-
     adapter = make_adapter(config)
 
-    for plugin in plugins.values():
-        log.info("Loaded plugin: %s", plugin.name)
+    for key, plugin in plugins.items():
+        log.info("Loaded plugin: %s (kind=%s)", key, plugin.name)
 
     layout = LayoutEngine.from_config(config, plugins, adapter)
 
