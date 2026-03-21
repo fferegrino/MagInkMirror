@@ -67,7 +67,7 @@ def preview_plugin(
 
     from PIL import Image
 
-    image = Image.new(mode, (width, height), color=255)
+    image = Image.new(mode, (width, height), color=(255, 255, 255))
 
     data = plugin.fetch()
     data = plugin.on_fetch_success(data)

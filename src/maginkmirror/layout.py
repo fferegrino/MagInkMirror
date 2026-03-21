@@ -136,7 +136,7 @@ class LayoutEngine:
 
         # Pick "ink" color depending on mode. For "1" and "L", 0 is black.
         stroke = 0
-        fill_bg = 255
+        fill_bg = (255, 255, 255)
 
         dirty: set[str] = set()
         for zc in self._zones:
