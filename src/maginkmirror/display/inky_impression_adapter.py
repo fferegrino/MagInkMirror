@@ -10,10 +10,7 @@ log = logging.getLogger(__name__)
 class InkyImpressionAdapter(BaseDisplayAdapter):
     """Adapter for the Inky Impression display."""
 
-    FULL_REFRESH_EVERY = 10
-
     def __init__(self, model: str = "auto") -> None:
-        self._partial_count = 0
         try:
             import inky as inky_module
             from inky.auto import auto
@@ -29,6 +26,17 @@ class InkyImpressionAdapter(BaseDisplayAdapter):
         except Exception as e:
             raise RuntimeError("Failed to initialize Inky Impression display") from e
 
+    def _prepare_for_inky(self, image: Image.Image) -> Image.Image:
+        """Resize to panel resolution and RGB; Inky ``set_image`` requires exact WxH."""
+        w, h = self._display.width, self._display.height
+        if image.size != (w, h):
+            image = image.resize((w, h), Image.Resampling.LANCZOS)
+        if image.mode == "RGBA":
+            bg = Image.new("RGB", image.size, (255, 255, 255))
+            bg.paste(image, mask=image.split()[3])
+            return bg
+        return image.convert("RGB")
+
     def display(self, image: Image.Image, dirty_plugins: set[str]) -> None:
         """Display the image on the Inky Impression display."""
         log.info(f"Displaying image on Inky Impression display: {image.size}")
@@ -36,7 +44,8 @@ class InkyImpressionAdapter(BaseDisplayAdapter):
         log.info(f"Image format: {image.format}")
         log.info(f"Image width: {image.width}")
         log.info(f"Image height: {image.height}")
-        # self._display.set_image(image)
+        prepared = self._prepare_for_inky(image)
+        self._display.set_image(prepared)
         self._display.set_border(self._inky.BLACK)
 
         self._display.show()
