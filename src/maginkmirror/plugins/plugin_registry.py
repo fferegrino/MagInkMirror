@@ -49,15 +49,19 @@ class PluginRegistry:
         """
         Create the config passed to a plugin instance.
 
-        Plugins currently get only their own `[plugins.<name>]` subsection.
-        Some helpers (like `maginkmirror.core.fonts.load_font`) expect global
-        sections such as `[fonts]`, so we expose those at the top level too.
+        Merge order (later wins):
+
+        1. ``[location]`` — shared timezone, coordinates, place/region (optional).
+        2. ``[plugins.<name>]`` — plugin-specific overrides.
+        3. ``[fonts]`` — exposed for ``maginkmirror.core.fonts.load_font`` and similar.
         """
         merged: dict = {}
+        loc = self.config.get("location")
+        if isinstance(loc, dict):
+            merged.update(loc)
         if isinstance(plugin_config, dict):
             merged.update(plugin_config)
 
-        # Expose global font settings to every plugin.
         if isinstance(self.config.get("fonts"), dict):
             merged["fonts"] = self.config["fonts"]
         return merged

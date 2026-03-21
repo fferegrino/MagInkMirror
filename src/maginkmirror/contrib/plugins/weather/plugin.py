@@ -308,7 +308,7 @@ class WeatherPlugin(BasePlugin):
     def render(self, data: PluginData, image: Image.Image, zone: Zone) -> None:
         """Render the current weather conditions."""
         draw = ImageDraw.Draw(image)
-        fill = 0
+        fill = (0, 0, 0)
 
         temp_font = load_font(self.config, self.config.get("temp_font"), int(self.config.get("temp_font_size", 52)))
         wind_font = load_font(self.config, self.config.get("wind_font"), int(self.config.get("wind_font_size", 20)))

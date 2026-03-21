@@ -44,9 +44,19 @@ class ClockPlugin(BasePlugin):
 
     def get_sun_intervals(self, date: datetime) -> list[datetime]:
         """Return dawn, sunrise, noon, sunset, dusk, and day boundaries for ``date``."""
-        location = LocationInfo("London", "England", "Europe/London", 51.507351, -0.127758)
+        tz_name = str(self.config.get("timezone", "UTC"))
+        lat = float(self.config.get("latitude", 51.5074))
+        lon = float(self.config.get("longitude", -0.1278))
+        place = str(self.config.get("place", "") or "here")
+        region = str(self.config.get("region", "") or "")
+        try:
+            tz = ZoneInfo(tz_name)
+        except Exception:
+            tz = ZoneInfo("UTC")
+        location = LocationInfo(place, region, tz_name, lat, lon)
+        day = date.date()
         begin_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        sun_over_location = sun(location.observer, date=date)
+        sun_over_location = sun(location.observer, date=day, tzinfo=tz)
 
         return [
             begin_of_day,  # Need to add the beginning of the day

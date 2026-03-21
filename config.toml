@@ -23,6 +23,16 @@ display_refresh_interval = 30
 [fonts]
 path = "@package:contrib/fonts"
 
+# Shared timezone, coordinates, and place labels for plugins that need them (clock,
+# weather, …). Keys here are merged into each `[plugins.<name>]`; anything set
+# under a plugin table overrides the same key from `[location]`.
+[location]
+timezone  = "Europe/London"
+latitude  = 51.5074
+longitude = -0.1278
+place     = "London"
+region    = "England"
+
 # ── Plugins ──────────────────────────────────────────────────────────────────
 
 # If omitted, all discovered plugins are loaded.
@@ -32,7 +42,6 @@ path = "@package:contrib/fonts"
 # plugin_dirs = ["/home/pi/.config/inkmirror/plugins"]
 
 [plugins.clock]
-timezone = "Europe/London"
 format   = "%H:%M:%S"
 time_font = "Merriweather"
 date_font_size = 60
@@ -41,8 +50,6 @@ time_font_size = 24
 
 [plugins.weather]
 provider  = "openmeteo"          # "openmeteo" (free, no key) | "openweathermap"
-latitude  = 51.5074
-longitude = -0.1278
 units     = "metric"
 # api_key = "YOUR_KEY"           # required for openweathermap
 temp_font = "Merriweather"

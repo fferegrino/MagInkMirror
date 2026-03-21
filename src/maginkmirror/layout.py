@@ -62,7 +62,7 @@ class LayoutEngine:
         self._zones = zones
         self._adapter = display_adapter
         self._mode = mode
-        self._image = Image.new(mode, (width, height), color=255)  # white canvas
+        self._image = Image.new(mode, (width, height), color=(255, 255, 255))  # white canvas
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
@@ -107,7 +107,7 @@ class LayoutEngine:
         with self._lock:
             for zc in matching:
                 # Create a blank zone-sized image and let the plugin draw into it
-                zone_img = Image.new(self._mode, (zc.zone.width, zc.zone.height), color=255)
+                zone_img = Image.new(self._mode, (zc.zone.width, zc.zone.height), color=(255, 255, 255))
                 try:
                     plugin.render(data, zone_img, zc.zone)
                 except Exception as exc:
