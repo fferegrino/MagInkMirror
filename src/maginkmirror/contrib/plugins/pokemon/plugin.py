@@ -7,9 +7,9 @@ import random
 import urllib.request
 from io import BytesIO
 
-from colour import Color
 from PIL import Image, ImageDraw
 
+from maginkmirror.core.colors import Color, contrasting_foreground_rgb
 from maginkmirror.core.fonts import load_font
 from maginkmirror.plugins import BasePlugin, PluginData, Zone
 
@@ -48,8 +48,6 @@ TYPE_COLORS = {
     "fairy": Color("#EE99AC"),
 }
 
-_LIGHT_BG_LUM_THRESHOLD = 0.55
-
 # Ascenders + descenders; stabilizes textbbox line metrics (same idea as CSS line-height).
 _REFERENCE_LINE_TEXT = "gjylth"
 
@@ -59,47 +57,11 @@ def _reference_bbox(draw, font) -> tuple[int, int, int, int]:
     return draw.textbbox((0, 0), _REFERENCE_LINE_TEXT, font=font)
 
 
-def _darken(color: Color, amount: float) -> Color:
-    """Linear blend toward black. ``amount`` in 0..1 (0 = unchanged, 1 = black)."""
-    amount = max(0.0, min(1.0, amount))
-    r, g, b = color.get_rgb()
-    r *= 1.0 - amount
-    g *= 1.0 - amount
-    b *= 1.0 - amount
-    out = Color()
-    out.set_rgb((r, g, b))
-    return out
-
-
-def _lighten(color: Color, amount: float) -> Color:
-    """Linear blend toward white. ``amount`` in 0..1 (0 = unchanged, 1 = white)."""
-    amount = max(0.0, min(1.0, amount))
-    r, g, b = color.get_rgb()
-    r = r + (1.0 - r) * amount
-    g = g + (1.0 - g) * amount
-    b = b + (1.0 - b) * amount
-    out = Color()
-    out.set_rgb((r, g, b))
-    return out
-
-
-def _color_rgb_u8(color: Color) -> tuple[int, int, int]:
-    r, g, b = color.get_rgb()
-    return (int(r * 255), int(g * 255), int(b * 255))
-
-
 def _type_fill_rgb(type_name: str) -> tuple[int, int, int]:
     c = TYPE_COLORS.get(type_name.lower())
     if c is None:
         c = Color("#888888")
-    rgb = c.get_rgb()
-    return (int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
-
-
-def _text_fill_for_bg(bg: tuple[int, int, int]) -> tuple[int, int, int]:
-    r, g, b = bg[0] / 255.0, bg[1] / 255.0, bg[2] / 255.0
-    luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-    return (20, 20, 20) if luminance > _LIGHT_BG_LUM_THRESHOLD else (255, 255, 255)
+    return c.rgb_u8()
 
 
 def _draw_types_row(
@@ -139,7 +101,7 @@ def _draw_types_row(
         box_w = tw + 2 * pad_x
         box_h = uniform_box_h
         bg = _type_fill_rgb(key)
-        tfill = _text_fill_for_bg(bg)
+        tfill = contrasting_foreground_rgb(bg)
         box_y = y
         r = min(4, max(1, box_h // 4))
         draw.rounded_rectangle((cx, box_y, cx + box_w, box_y + box_h), radius=r, fill=bg)
@@ -257,8 +219,8 @@ class PokemonPlugin(BasePlugin):
         species_color = data.payload.get("species_color")
         species_color = "black" if species_color == "white" else species_color
         species_color = Color(species_color)
-        text_fill = _color_rgb_u8(_darken(species_color, 0.4))
-        background_fill = _color_rgb_u8(_lighten(species_color, 0.9))
+        text_fill = species_color.darken(0.4).rgb_u8()
+        background_fill = species_color.lighten(0.9).rgb_u8()
         draw.rectangle((0, 0, zone.width, zone.height), fill=background_fill)
 
         name_font = load_font(

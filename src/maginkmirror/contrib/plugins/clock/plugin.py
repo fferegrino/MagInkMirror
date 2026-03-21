@@ -8,9 +8,9 @@ from zoneinfo import ZoneInfo
 
 from astral import LocationInfo
 from astral.sun import sun
-from colour import Color
 from PIL import Image, ImageDraw
 
+from maginkmirror.core.colors import Color
 from maginkmirror.core.fonts import load_font
 from maginkmirror.core.svg import render_svg_to_image
 from maginkmirror.plugins import BasePlugin, PluginData, Zone
@@ -43,6 +43,7 @@ class ClockPlugin(BasePlugin):
         )
 
     def get_sun_intervals(self, date: datetime) -> list[datetime]:
+        """Return dawn, sunrise, noon, sunset, dusk, and day boundaries for ``date``."""
         location = LocationInfo("London", "England", "Europe/London", 51.507351, -0.127758)
         begin_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
         sun_over_location = sun(location.observer, date=date)
@@ -58,6 +59,7 @@ class ClockPlugin(BasePlugin):
         ]
 
     def get_colors(self, date: datetime) -> tuple[Color, Color, Color]:
+        """Return SVG gradient top/bottom colors and text fill for ``date``."""
         sun_intervals = self.get_sun_intervals(date)
         darkness = Color("#5D5D5E")
         night = Color("#7f7f7f")
@@ -103,8 +105,7 @@ class ClockPlugin(BasePlugin):
         )
         image.paste(clock_svg, (0, 0))
 
-        fill = fill_color.get_rgb()
-        fill = (int(fill[0] * 255), int(fill[1] * 255), int(fill[2] * 255))
+        fill = fill_color.rgb_u8()
 
         # Time – centred horizontally
         date_str = payload.get("date", "")
