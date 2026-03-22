@@ -64,6 +64,8 @@ condition_font_size = 20
 
 [plugins.pokemon]
 
+[plugins.notion]
+
 [plugins.rss]
 feed_url = ["https://www.theguardian.com/uk/rss", "https://www.theguardian.com/world/rss"]
 max_items = 5
@@ -79,14 +81,28 @@ plugin = "clock"
 x      = 0
 y      = 0
 width  = 800
-height = 120
+height = 100
 
-[layout.zones.weather]
-plugin = "weather"
+[layout.zones.notion]
+plugin = "notion"
 x      = 0
-y      = 120
-width  = 200
-height = 240
+y      = 100
+width  = 800
+height = 380
+task_font = "OpenSans"
+task_font_size = 15
+token = "${NOTION_TOKEN}"
+database_id = "${NOTION_DATABASE_ID}"
+title_property = "Task name"
+show_headline = false
+show_column_headlines = false
+
+# [layout.zones.weather]
+# plugin = "weather"
+# x      = 0
+# y      = 120
+# width  = 200
+# height = 240
 
 # [layout.zones.todoist]
 # plugin = "todoist"
@@ -95,16 +111,16 @@ height = 240
 # width  = 400
 # height = 240
 
-[layout.zones.pokemon]
-plugin = "pokemon"
-x      = 600
-y      = 120
-width  = 200
-height = 240
+# [layout.zones.pokemon]
+# plugin = "pokemon"
+# x      = 600
+# y      = 120
+# width  = 200
+# height = 240
 
-[layout.zones.rss]
-plugin = "rss"
-x      = 0
-y      = 360
-width  = 800
-height = 120
+# [layout.zones.rss]
+# plugin = "rss"
+# x      = 0
+# y      = 360
+# width  = 800
+# height = 120
