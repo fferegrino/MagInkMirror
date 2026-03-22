@@ -480,7 +480,7 @@ def _draw_board_columns(
             continue
         name = str(col.get("name", "") or "")
         column_color = smap.get(name)
-        column_color = Color("gray" if (column_color is None) or (column_color == "default") else column_color)
+        column_color = Color("black" if (column_color is None) or (column_color == "default") else column_color)
         bg_color = (255,255,255)
         task_color = column_color.rgb_u8()
         text_color = contrasting_foreground_rgb(task_color)
