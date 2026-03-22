@@ -42,11 +42,14 @@ region    = "England"
 # plugin_dirs = ["/home/pi/.config/inkmirror/plugins"]
 
 [plugins.clock]
-format   = "%H:%M:%S"
-time_font = "Merriweather"
-date_font_size = 60
-date_font = "Merriweather"
-time_font_size = 24
+time_format   = "%H:%M:%S"
+main_font = "Merriweather"
+main_font_size = 60
+date_format = "%A, %d %B %Y"
+secondary_font = "Merriweather"
+secondary_font_size = 24
+main_info = "date"
+# secondary_info = "time"
 
 [plugins.weather]
 provider  = "openmeteo"          # "openmeteo" (free, no key) | "openweathermap"

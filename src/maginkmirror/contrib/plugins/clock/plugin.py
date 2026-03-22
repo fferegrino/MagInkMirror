@@ -3,16 +3,11 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime
 
-from astral import LocationInfo
-from astral.sun import sun
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
-from maginkmirror.core.colors import Color
 from maginkmirror.core.fonts import load_font
-from maginkmirror.core.svg import render_svg_to_image
 from maginkmirror.plugins import BasePlugin, PluginData, Zone
 
 PLUGIN_CLASS = "ClockPlugin"
@@ -37,94 +32,48 @@ class ClockPlugin(BasePlugin):
             tz = None  # fall back to local time
 
         now = datetime.now(tz=tz)
-        fmt = self.config.get("format", "%H:%M:%S")
-        return PluginData(
-            payload={"time": now.strftime(fmt), "date": now.strftime("%A, %d %B %Y"), "timezone": tz_name}
-        )
-
-    def get_sun_intervals(self, date: datetime) -> list[datetime]:
-        """Return dawn, sunrise, noon, sunset, dusk, and day boundaries for ``date``."""
-        tz_name = str(self.config.get("timezone", "UTC"))
-        lat = float(self.config.get("latitude", 51.5074))
-        lon = float(self.config.get("longitude", -0.1278))
-        place = str(self.config.get("place", "") or "here")
-        region = str(self.config.get("region", "") or "")
-        try:
-            tz = ZoneInfo(tz_name)
-        except Exception:
-            tz = ZoneInfo("UTC")
-        location = LocationInfo(place, region, tz_name, lat, lon)
-        day = date.date()
-        begin_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        sun_over_location = sun(location.observer, date=day, tzinfo=tz)
-
-        return [
-            begin_of_day,  # Need to add the beginning of the day
-            sun_over_location["dawn"],
-            sun_over_location["sunrise"],
-            sun_over_location["noon"],
-            sun_over_location["sunset"],
-            sun_over_location["dusk"],
-            begin_of_day + timedelta(days=1),  # Need to add the beginning of the next day
-        ]
-
-    def get_colors(self, date: datetime) -> tuple[Color, Color, Color]:
-        """Return SVG gradient top/bottom colors and text fill for ``date``."""
-        sun_intervals = self.get_sun_intervals(date)
-        darkness = Color("#5D5D5E")
-        night = Color("#7f7f7f")
-        mid = Color("#a2a2a2")
-        noon = Color("#c7c7c7")
-        black = Color("#000000")
-        white = Color("#ffffff")
-
-        if sun_intervals[0] <= date < sun_intervals[1]:
-            log.info(f"First interval {date} {sun_intervals[0]} {sun_intervals[1]}")
-            return darkness, night, white
-        elif sun_intervals[1] <= date < sun_intervals[2]:
-            log.info(f"Second interval {date} {sun_intervals[1]} {sun_intervals[2]}")
-            return night, mid, white
-        elif sun_intervals[2] <= date < sun_intervals[3]:
-            log.info(f"Third interval {date} {sun_intervals[2]} {sun_intervals[3]}")
-            return mid, noon, black
-        elif sun_intervals[3] <= date < sun_intervals[4]:
-            log.info(f"Fourth interval {date} {sun_intervals[3]} {sun_intervals[4]}")
-            return noon, mid, black
-        elif sun_intervals[4] <= date < sun_intervals[5]:
-            log.info(f"Fifth interval {date} {sun_intervals[4]} {sun_intervals[5]}")
-            return mid, night, white
-        else:
-            log.info(f"Sixth interval {date} {sun_intervals[5]} {sun_intervals[6]}")
-            return night, darkness, white
+        fmt = self.config.get("time_format", "%H:%M:%S")
+        date_fmt = self.config.get("date_format", "%A, %d %B %Y")
+        return PluginData(payload={"time": now.strftime(fmt), "date": now.strftime(date_fmt), "timezone": tz_name})
 
     def render(self, data: PluginData, image: Image.Image, zone: Zone) -> None:
         """Render the current time."""
         draw = ImageDraw.Draw(image)
         payload = data.payload
 
-        time_font = load_font(self.config, self.config.get("time_font"), int(self.config.get("time_font_size", 24)))
-        date_font = load_font(self.config, self.config.get("date_font"), int(self.config.get("date_font_size", 72)))
-
-        top_color, bottom_color, fill_color = self.get_colors(datetime.now(tz=ZoneInfo(payload.get("timezone", "UTC"))))
-
-        clock_svg = render_svg_to_image(
-            "@package:contrib/plugins/clock/backgrounds/dusk.svg",
-            width=zone.width,
-            height=zone.height,
-            template_vars={"top_color": top_color.hex, "bottom_color": bottom_color.hex},
+        main_font = load_font(self.config, self.config.get("main_font"), int(self.config.get("main_font_size", 60)))
+        secondary_font = load_font(
+            self.config, self.config.get("secondary_font"), int(self.config.get("secondary_font_size", 24))
         )
-        image.paste(clock_svg, (0, 0))
 
-        fill = fill_color.rgb_u8()
+        fill = (0, 0, 0)
 
-        # Time – centred horizontally
-        date_str = payload.get("date", "")
-        bbox = draw.textbbox((0, 0), date_str, font=date_font)
-        tw = bbox[2] - bbox[0]
-        draw.text(((zone.width - tw) // 2, 10), date_str, font=date_font, fill=fill)
+        main_key = (self.config.get("main_info") or "").strip()
+        secondary_key = (self.config.get("secondary_info") or "").strip()
 
-        # Time – centred below
-        time_str = payload.get("time", "")
-        bbox = draw.textbbox((0, 0), time_str, font=time_font)
-        dw = bbox[2] - bbox[0]
-        draw.text(((zone.width - dw) // 2, 90), time_str, font=time_font, fill=fill)
+        main_text = str(payload.get(main_key, "")).strip() if main_key else ""
+        secondary_text = str(payload.get(secondary_key, "")).strip() if secondary_key else ""
+
+        lines: list[tuple[str, ImageFont.ImageFont]] = []
+        if main_key and main_text:
+            lines.append((main_text, main_font))
+        if secondary_key and secondary_text:
+            lines.append((secondary_text, secondary_font))
+
+        if not lines:
+            return
+
+        gap = max(4, int(self.config.get("secondary_font_size", 24)) // 6)
+        heights: list[int] = []
+        for text, font in lines:
+            bbox = draw.textbbox((0, 0), text, font=font)
+            heights.append(bbox[3] - bbox[1])
+        total_h = sum(heights) + gap * (len(lines) - 1)
+        y = max(0, (zone.height - total_h) // 2)
+
+        for i, ((text, font), h) in enumerate(zip(lines, heights, strict=True)):
+            bbox = draw.textbbox((0, 0), text, font=font)
+            tw = bbox[2] - bbox[0]
+            x = (zone.width - tw) // 2
+            draw.text((x, y), text, font=font, fill=fill)
+            y += h + (gap if i < len(lines) - 1 else 0)
