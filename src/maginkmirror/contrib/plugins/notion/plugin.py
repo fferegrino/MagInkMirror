@@ -8,7 +8,7 @@ from typing import Any
 
 from PIL import Image, ImageDraw
 
-from maginkmirror.core.colors import Color
+from maginkmirror.core.colors import Color, contrasting_foreground_rgb
 from maginkmirror.core.fonts import load_font
 from maginkmirror.plugins import BasePlugin, PluginData, Zone
 
@@ -481,9 +481,9 @@ def _draw_board_columns(
         name = str(col.get("name", "") or "")
         column_color = smap.get(name)
         column_color = Color("gray" if (column_color is None) or (column_color == "default") else column_color)
-        bg_color = column_color.lighten(0.9).rgb_u8()
-        task_color = column_color.lighten(0.8).rgb_u8()
-        text_color = column_color.darken(0.8).rgb_u8()
+        bg_color = (255,255,255)
+        task_color = column_color.rgb_u8()
+        text_color = contrasting_foreground_rgb(task_color)
         tasks = col.get("tasks") or []
         if not isinstance(tasks, list):
             tasks = []
